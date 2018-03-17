@@ -7,9 +7,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -18,35 +16,94 @@ import java.sql.Statement;
 import java.util.ArrayList;
 
 import trivia.model.TriviaEntry;
-/**
- * Servlet implementation class AdminTrivia
- */
+
 @WebServlet("/AdminTrivia")
 public class AdminTrivia extends HttpServlet {
 	private static final long serialVersionUID = 1L;
-       
-    /**
-     * @see HttpServlet#HttpServlet()
-     */
-    public AdminTrivia() {
-        super();
-        // TODO Auto-generated constructor stub
+  
+	public void init(ServletConfig config) throws ServletException {
+    	super.init(config);
+    	
+    	try {
+    		Class.forName("com.mysql.jdbc.Driver");
+    	} catch (ClassNotFoundException e){
+    		throw new ServletException(e);
+    	}
     }
 
-	/**
-	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 */
+	
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
-		response.getWriter().append("Served at: ").append(request.getContextPath());
+		Connection c = null;
+		
+		try {
+			String host = "127.0.0.1";
+			String port = "3306";
+			
+			String dbName = "Trivia";
+			String username = "root";
+			String password = "MySQL456";
+			
+			String url = "jdbc:mysql://" + host + ":" + port + "/" + dbName;
+			c = DriverManager.getConnection(url, username, password);
+			
+			Statement state = c.createStatement();
+			ResultSet rs = state.executeQuery("SELECT * FROM quiz");
+			
+			ArrayList<TriviaEntry> entries = new ArrayList<TriviaEntry>();
+			
+			while (rs.next()) {
+				Integer id = rs.getInt("id");
+				String question = rs.getString("question");
+				String answer = rs.getString("answer");
+				TriviaEntry entry = new TriviaEntry(id, question, answer);
+				entries.add(entry);
+			}
+			
+			request.setAttribute("quiz", entries);
+			request.getRequestDispatcher("/WEB-INF/views/AdminTrivia.jsp").forward(request, response);
+			
+		} catch (SQLException e) {
+			throw new ServletException(e);
+		} finally {
+			try {
+				if (c != null) {
+					c.close();
+				}
+			} catch (SQLException e) {
+				throw new ServletException(e);
+			}
+		}
 	}
 
-	/**
-	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
-	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
-		doGet(request, response);
+		Connection conn = null;
+		
+		try {
+			String host = "127.0.0.1";
+			String port = "3606";
+			
+			String dbName = "Trivia";
+			String username = "root";
+			String password = "MySQL456";
+			
+			String url = "jdbc:mysql://" + host + ":" + port + "/" + dbName;
+			conn = DriverManager.getConnection(url, username, password);
+			
+			Statement state = conn.createStatement();
+			state.executeQuery("INSERT INTO quiz (id, question, answer) VALUES (NULL, ' " + request.getParameter("question") + " ',' " + request.getParameter("answer") + " '); ");
+			
+			response.sendRedirect("AdminTrivia");
+		} catch (SQLException e) {
+			throw new ServletException(e);
+		} finally {
+			try {
+				if (conn != null) {
+					conn.close();
+				}
+			} catch (SQLException e) {
+				throw new ServletException(e);
+			}
+		}
 	}
 
 }
